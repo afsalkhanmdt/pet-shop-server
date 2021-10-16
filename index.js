@@ -57,9 +57,12 @@ app.post('/api/v1/login', async(req, res) => {
 })
 
 app.get('/api/v1/shop/pets', async(req,res) => {
+    const pet = await Pet.findById(req.body.id);
+    const pets = await Pet.find();
     try {
-        const pets = await Pet.find();
-        res.json(pets)
+       if(!pet) {return res.json(pets) }
+       else {return res.json(pet)}
+        
     } catch (error) {
         res.json({message: error.message})
     }
@@ -76,6 +79,8 @@ app.post('/api/v1/shop/pets', async(req, res) => {
         shopOwner: req.body.shopOwner
     })
 
+    
+
     try {
         await pet.save()
         res.json({status: true, data: "Pet created successfully"})
@@ -83,6 +88,8 @@ app.post('/api/v1/shop/pets', async(req, res) => {
         res.json({message: error.message})
     }
 })
+
+
 
 app.listen(5000, ()=>{
     console.log('app listen in port 5000');
