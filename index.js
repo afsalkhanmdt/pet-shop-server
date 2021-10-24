@@ -5,6 +5,9 @@ const Shop = require('./Models/shop')
 const shop = require('./Models/shop')
 const cors = require('cors')
 const Pet = require('./Models/pets')
+var jwt = require('jsonwebtoken')
+require('dotenv').config()
+
 
 mongoose.connect('mongodb://localhost/petShop')
 const db = mongoose.connection
@@ -14,6 +17,21 @@ const app = express()
 
 app.use(express.json())
 app.use(cors())
+
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization']
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token == null) return res.sendStatus(401)
+  
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  
+      if (err) return res.sendStatus(403)
+  
+      req.user_id = user.user_id
+  
+      next()
+    })
+}
 
 app.get('/', async(req, res)=>{
     try {
@@ -50,7 +68,10 @@ app.post('/api/v1/login', async(req, res) => {
             res.json({status: false, data: "Password Incorrect"})
             return
         }
-        res.json({status: true, data: "Successfully Logedin"})
+        res.json({status: true,
+             data: "Successfully Logedin",
+             token: `Bearer ${jwt.sign({ user_id: shop._id }, process.env.JWT_SECRET)}`
+            })
     } catch (error) {
         res.json({message: error.message})
     }
@@ -68,7 +89,7 @@ app.get('/api/v1/shop/pets', async(req,res) => {
     }
 })
 
-app.post('/api/v1/shop/pets', async(req, res) => {
+app.post('/api/v1/shop/pets',authenticateToken, async(req, res) => {
 
     const pet = new Pet({
         petName: req.body.petName,
