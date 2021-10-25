@@ -15,7 +15,7 @@ const app = express()
 app.use(express.json())
 app.use(cors())
 
-app.get('/', async(req, res)=>{
+app.get('/api/v1/shops', async(req, res)=>{
     try {
         const data = await shop.find({})
         res.json(data)
@@ -56,6 +56,25 @@ app.post('/api/v1/login', async(req, res) => {
     }
 })
 
+app.post('/api/v1/pet', async(req, res) => {
+    const pp = await Pet.findById(req.body.id)
+    const ppp = pp._id
+
+    console.log(ppp);
+    
+})
+
+app.get('/api/v1/pet', async(req,res) => {
+    try {
+       const pppp = await Pet.findById("6163944de11c7cdf6950e423")
+       console.log(pppp);
+    } catch (error) {
+        res.json({message: error.message})
+    }
+})
+
+
+
 app.get('/api/v1/shop/pets', async(req,res) => {
     const pet = await Pet.findById(req.body.id);
     const pets = await Pet.find();
@@ -78,8 +97,6 @@ app.post('/api/v1/shop/pets', async(req, res) => {
         petPrice: req.body.petPrice,
         shopOwner: req.body.shopOwner
     })
-
-    
 
     try {
         await pet.save()
