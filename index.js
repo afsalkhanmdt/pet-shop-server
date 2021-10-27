@@ -2,9 +2,12 @@ const express = require('express')
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 const Shop = require('./Models/shop')
-const shop = require('./Models/shop')
 const cors = require('cors')
 const Pet = require('./Models/pets')
+var jwt = require('jsonwebtoken')
+const { findByIdAndUpdate } = require('./Models/shop')
+require('dotenv').config()
+
 
 mongoose.connect('mongodb://localhost/petShop')
 const db = mongoose.connection
@@ -15,9 +18,24 @@ const app = express()
 app.use(express.json())
 app.use(cors())
 
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization']
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token == null) return res.sendStatus(401)
+  
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  
+      if (err) return res.sendStatus(403)
+  
+      req.user_id = user.user_id
+  
+      next()
+    })
+}
+
 app.get('/api/v1/shops', async(req, res)=>{
     try {
-        const data = await shop.find({})
+        const data = await Shop.find({})
         res.json(data)
     } catch (error) {
         res.json({message: error.message})
@@ -50,44 +68,46 @@ app.post('/api/v1/login', async(req, res) => {
             res.json({status: false, data: "Password Incorrect"})
             return
         }
-        res.json({status: true, data: "Successfully Logedin"})
+        res.json({status: true,
+             data: "Successfully Logedin",
+             token: `Bearer ${jwt.sign({ user_id: shop._id }, process.env.JWT_SECRET)}`
+            })
     } catch (error) {
         res.json({message: error.message})
     }
 })
 
-app.post('/api/v1/pet', async(req, res) => {
-    const pp = await Pet.findById(req.body.id)
-    const ppp = pp._id
-
-    console.log(ppp);
-    
-})
-
-app.get('/api/v1/pet', async(req,res) => {
+app.get('/api/v1/shop/:sid', async(req, res) => {
+    const shopid = req.params.sid
+    const shop = await Shop.findById(shopid);
     try {
-       const pppp = await Pet.findById("6163944de11c7cdf6950e423")
-       console.log(pppp);
+        res.json(shop)
+    } catch (error) {
+        res.json({message: error.message})
+    }
+})
+
+app.get('/api/v1/pet/:pid', async(req, res) => {
+    const petid = req.params.pid
+    const pet = await Pet.findById(petid);
+    try {
+        res.json(pet)
     } catch (error) {
         res.json({message: error.message})
     }
 })
 
 
-
-app.get('/api/v1/shop/pets', async(req,res) => {
-    const pet = await Pet.findById(req.body.id);
+app.get('/api/v1/pets', async(req,res) => {
     const pets = await Pet.find();
     try {
-       if(!pet) {return res.json(pets) }
-       else {return res.json(pet)}
-        
+       res.json(pets)     
     } catch (error) {
         res.json({message: error.message})
     }
 })
 
-app.post('/api/v1/shop/pets', async(req, res) => {
+app.post('/api/v1/shop/pets',authenticateToken, async(req, res) => {
 
     const pet = new Pet({
         petName: req.body.petName,
@@ -101,6 +121,17 @@ app.post('/api/v1/shop/pets', async(req, res) => {
     try {
         await pet.save()
         res.json({status: true, data: "Pet created successfully"})
+    } catch (error) {
+        res.json({message: error.message})
+    }
+})
+
+app.get('/api/v1/profile',authenticateToken,async(req, res) => {
+    try {
+        const tkid = req.user_id
+        const shopDt = await Shop.findById(tkid);
+        console.log(shopDt);
+        res.json(shopDt)
     } catch (error) {
         res.json({message: error.message})
     }
