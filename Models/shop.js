@@ -7,6 +7,7 @@ const shopSchema = new mongoose.Schema({
     email: {type: String, unique: true, required: true},
     phone: {type: String, unique: true, required: true, length: 10},
     password: {type: String, required: true}
+    
 })
 
 module.exports = mongoose.model('shop', shopSchema)
