@@ -9,6 +9,7 @@ var jwt = require('jsonwebtoken')
 const { findByIdAndUpdate } = require('./Models/shop')
 require('dotenv').config()
 const fileUpload = require('express-fileupload')
+
 mongoose.connect('mongodb://localhost/petShop')
 const db = mongoose.connection
 db.once('open', ()=> {console.log('database connected');})
@@ -131,7 +132,7 @@ app.post('/api/v1/shop/pets',authenticateToken, async(req, res) => {
 
 app.get('/api/v1/profile',authenticateToken,async(req, res) => {
     try {
-        const tkid = req.user_idc
+        const tkid = req.user_id
         const shopDt = await Shop.findById(tkid);
         console.log(shopDt);
         res.json(shopDt)
