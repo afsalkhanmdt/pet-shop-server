@@ -107,6 +107,19 @@ app.get('/api/v1/pets', async(req,res) => {
     }
 })
 
+app.get('/api/v1/shops/pet/:sid', async(req,res) => {
+    const shopid = req.params.sid
+    const shop = await Shop.findById(shopid);
+    const name = shop.shopName
+    const pet = await Pet.find({shopOwner: name});
+    try {
+       res.json(pet)  
+       console.log(pet);
+    } catch (error) {
+        res.json({message: error.message})
+    }
+})
+
 app.post('/api/v1/shop/pets',authenticateToken, async(req, res) => {
 
     const pet = new Pet({
@@ -132,6 +145,19 @@ app.get('/api/v1/profile',authenticateToken,async(req, res) => {
         const shopDt = await Shop.findById(tkid);
         console.log(shopDt);
         res.json(shopDt)
+    } catch (error) {
+        res.json({message: error.message})
+    }
+})
+
+app.get('/api/v1/mypets',authenticateToken,async(req, res) => {
+    try {
+        const tkid = req.user_id
+        const shopDt = await Shop.findById(tkid);
+        const shop = shopDt.shopName
+        const pets = await Pet.find({shopOwner: shop});
+        console.log(pets);
+        res.json(pets)
     } catch (error) {
         res.json({message: error.message})
     }
