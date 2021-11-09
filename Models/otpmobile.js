@@ -19,7 +19,7 @@ const sendOtp = async(mobileNumber) =>{
     if (res.error) {
         throw new Error(res.error);
     }
-    return {status: true, otp };
+    return {status: true, otp:otp };
 }
 
 module.exports = {

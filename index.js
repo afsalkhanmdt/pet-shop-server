@@ -166,11 +166,13 @@ app.post("/api/v1/forgotpassword",async(req,res)=>{
         }
       
         const otpResponce = await sendOtp(phone);
-        console.log({sendOtp})
-      const otpp = await Otp.create({phone: req.body.phone,
-        otp: req.body.otpResponce})
+        console.log(otpResponce)
+//console.log({sendOtp})
+      const otpp = await Otp.create({phone:req.body.phone,
+        otp: otpResponce.otp})
       //await otp.save()
       console.log({otpp})
+     
         if(!otpResponce){   
           res.send({status: false, data: "Failed to sent otp"});
           return;
@@ -186,33 +188,34 @@ app.post("/api/v1/forgotpassword",async(req,res)=>{
       
         const {phone,otp} = req.body;
         const otpData = await Otp.findOne({phone})
-        
-       if(!otpData.length){
+        console.log(otpData)
+       if(!otpData){
           res.send({status: false, data: "Otp does not exists"});
           return;
         }
         
-        if(otpData[otpData.length - 1].otp != otp){
+        if(otpData.otp != otp){
           res.send({status: false, data: "Wrong Otp"});
           return;
         }
-     
+        res.json({status: true,
+            data: "Successfully Logedin",
+            token: `Bearer ${jwt.sign({ user_id: otp._id }, process.env.JWT_SECRET)}`
+           })
     });
       
       
       
       app.post("/api/v1/forgotpassword/password-reset",authenticateToken,async(req,res)=>{
        
-        try{
+       
         const{phone,password} = req.body;
-        const hashedPassword = await generateHash(password);
-      
-      await Shop.findOneAndUpdate({password:hashedPassword});
+        
+        const hashedPassword = await bcrypt.hash(password, 10)
+      await Shop.findOneAndUpdate({phone},{password:hashedPassword});
       
       res.send({status: true, data: " Password updated successfully!"});
     
-      }catch(error){res.json({message:error.meassage})
-       }
       
     });
 
