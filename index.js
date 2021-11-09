@@ -4,17 +4,21 @@ const bcrypt = require('bcrypt')
 const Shop = require('./Models/shop')
 const cors = require('cors')
 const Pet = require('./Models/pets')
+const otp=require('./Models/otp')
 var jwt = require('jsonwebtoken')
 const { findByIdAndUpdate } = require('./Models/shop')
 require('dotenv').config()
-
+const fileUpload = require('express-fileupload')
 
 mongoose.connect('mongodb://localhost/petShop')
 const db = mongoose.connection
 db.once('open', ()=> {console.log('database connected');})
-
+const short=require('short-uuid')
+const crypto = require('crypto');
+const sendOtp=require('./Models/otpmobile')
 const app = express()
-
+app.use(fileUpload())
+app.use("/images", express.static("images"))
 app.use(express.json())
 app.use(cors())
 
@@ -114,7 +118,6 @@ app.get('/api/v1/shops/pet/:sid', async(req,res) => {
     const pet = await Pet.find({shopOwner: name});
     try {
        res.json(pet)  
-       console.log(pet);
     } catch (error) {
         res.json({message: error.message})
     }
@@ -143,7 +146,6 @@ app.get('/api/v1/profile',authenticateToken,async(req, res) => {
     try {
         const tkid = req.user_id
         const shopDt = await Shop.findById(tkid);
-        console.log(shopDt);
         res.json(shopDt)
     } catch (error) {
         res.json({message: error.message})
@@ -156,13 +158,111 @@ app.get('/api/v1/mypets',authenticateToken,async(req, res) => {
         const shopDt = await Shop.findById(tkid);
         const shop = shopDt.shopName
         const pets = await Pet.find({shopOwner: shop});
-        console.log(pets);
         res.json(pets)
     } catch (error) {
         res.json({message: error.message})
     }
 })
 
+app.post('/api/v1/imageupload',async(req,res)=>{
+    
+  
+   
+    Object.entries(req.files).forEach(element => {
+        console.log(element)
+        let randomValue = crypto.randomUUID()
+        fileNames.push(randomValue +".jpg")
+
+        req.files[element[0]].mv("./images/"+randomValue+".jpg").then((error)=>{
+              console.log(error)})
+    });
+    // if (!req.files || Object.keys(req.files).length === 0) {
+    //     return res.status(400).send('No files were uploaded.');
+    //   }
+    //    const {image} = req.files
+    //   const uploadPath = '/images/' + short.generate()+".jpg"
+    //   image.mv( __dirname +uploadPath, (err)=> {
+    //     if (err)
+    //       return res.status(500).send(err);
+    //       console.log(mv)
+    //     res.send({status: true, data: {url:uploadPath}});
+    //    });
+
+})
+app.post("/api/v1/forgotpassword",async(req,res)=>{
+    try{
+       
+        const pp = req.body.phone
+        const phoneData = await Shop.findOne({phone:req.body.phone});
+        console.log(pp)
+        if(!phoneData.length){
+          res.send({status: false, data: "NO phone number exist"});
+          return;
+        }
+      
+        const otpResponce = await sendOtp(phone);
+      
+        if(!otpResponce.status){   
+          res.send({status: false, data: "Failed to sent otp"});
+          return;
+        }
+      
+    }catch(error){
+        res.json({message:error.meassage})
+    }
+    });
+        
+      
+        
+app.post("/api/v1/forgotpassword/otp-verification",async(req,res)=>{
+    
+    try{
+        const {phone,otp} = req.body;
+        const otpData = await otp.findOne({phone})
+        
+       if(!otpData.length){
+          res.send({status: false, data: "Otp does not exists"});
+          return;
+        }
+        
+        if(otpData[otpData.length - 1].otp != otp){
+          res.send({status: false, data: "Wrong Otp"});
+          return;
+        }
+    }catch(error){res.json({message:error.meassage})
+     }
+    });
+      
+      
+      
+app.post("/api/v1/forgotpassword/password-reset",authenticateToken,async(req,res)=>{
+       
+    try{
+        const{phone,password} = req.body;
+        const hashedPassword = await generateHash(password);
+      
+        await Shop.findOneAndUpdate({password:hashedPassword});
+      
+        res.send({status: true, data: " Password updated successfully!"});
+    
+    }catch(error){res.json({message:error.meassage})
+    }
+      
+    });
+
+app.post('/api/v1/shop/update', authenticateToken, async(req, res) => {
+ 
+    try{
+        const tkid = req.user_id
+        await Shop.findOneAndUpdate({_id:tkid},{shopName: req.body.shopName,
+        shopLocation: req.body.shopLocation,
+        pin: req.body.pin}).exec()
+
+         
+        res.json({status: true, data: "Shop upateded successfully"})
+    }catch(error) {
+        res.json({message: error.message})
+    } })
 
 
 app.listen(5000, ()=>{
