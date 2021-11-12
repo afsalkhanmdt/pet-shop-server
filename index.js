@@ -119,7 +119,8 @@ app.post('/api/v1/shop/pets',authenticateToken, async(req, res) => {
         petAge: req.body.petAge,
         petDescription: req.body.petDescription,
         petPrice: req.body.petPrice,
-        shopOwner: req.body.shopOwner
+        shopOwner: req.body.shopOwner,
+        shopId:req.body.shopId
     })
 
     try {
@@ -209,7 +210,7 @@ app.post("/api/v1/forgotpassword",async(req,res)=>{
       app.post("/api/v1/forgotpassword/password-reset",authenticateToken,async(req,res)=>{
        
        
-        const{phone,password} = req.body;
+        const{phone,password} = req.body;h
         
         const hashedPassword = await bcrypt.hash(password, 10)
       await Shop.findOneAndUpdate({phone},{password:hashedPassword});
@@ -232,7 +233,18 @@ app.post('/api/v1/shop/update', async(req, res) => {
         res.json({message: error.message})
     } })
 
-
-app.listen(6000, ()=>{
+    app.get('/api/v1/shop/pet/:sid', async(req, res) => {
+      
+            const shopId = req.params.sid
+            const shop = await Pet.find({shopId});
+            const pets = await Pet.find({shopId});
+            
+            res.send({shop})
+           
+        
+        });
+        
+  
+app.listen(5000, ()=>{
     console.log('app listen in port 5000');
 })
