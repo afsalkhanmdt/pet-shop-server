@@ -4,9 +4,8 @@ const bcrypt = require('bcrypt')
 const Shop = require('./Models/shop')
 const cors = require('cors')
 const Pet = require('./Models/pets')
-const otp=require('./Models/otp')
+const Otp=require('./Models/otp')
 var jwt = require('jsonwebtoken')
-const { findByIdAndUpdate } = require('./Models/shop')
 require('dotenv').config()
 const fileUpload = require('express-fileupload')
 
@@ -15,7 +14,7 @@ const db = mongoose.connection
 db.once('open', ()=> {console.log('database connected');})
 const short=require('short-uuid')
 const crypto = require('crypto');
-const sendOtp=require('./Models/otpmobile')
+const {sendOtp}=require('./Models/otpmobile')
 const app = express()
 app.use(fileUpload())
 app.use("/images", express.static("images"))
@@ -176,49 +175,40 @@ app.post('/api/v1/imageupload',async(req,res)=>{
         req.files[element[0]].mv("./images/"+randomValue+".jpg").then((error)=>{
               console.log(error)})
     });
-    // if (!req.files || Object.keys(req.files).length === 0) {
-    //     return res.status(400).send('No files were uploaded.');
-    //   }
-    //    const {image} = req.files
-    //   const uploadPath = '/images/' + short.generate()+".jpg"
-    //   image.mv( __dirname +uploadPath, (err)=> {
-    //     if (err)
-    //       return res.status(500).send(err);
-    //       console.log(mv)
-    //     res.send({status: true, data: {url:uploadPath}});
-    //    });
-
+    
 })
+
 app.post("/api/v1/forgotpassword",async(req,res)=>{
-    try{
-       
-        const pp = req.body.phone
+    
+        const phone=req.body.phone
         const phoneData = await Shop.findOne({phone:req.body.phone});
-        console.log(pp)
-        if(!phoneData.length){
+        console.log(phone)
+        if(!phoneData){
           res.send({status: false, data: "NO phone number exist"});
           return;
         }
       
         const otpResponce = await sendOtp(phone);
-      
-        if(!otpResponce.status){   
+        console.log({sendOtp})
+        const otpp = await Otp.create({phone: req.body.phone,
+        otp: req.body.otpResponce})
+      //await otp.save()
+        console.log({otpp})
+        if(!otpResponce){   
           res.send({status: false, data: "Failed to sent otp"});
           return;
         }
       
-    }catch(error){
-        res.json({message:error.meassage})
-    }
+   
     });
         
       
         
 app.post("/api/v1/forgotpassword/otp-verification",async(req,res)=>{
     
-    try{
+      
         const {phone,otp} = req.body;
-        const otpData = await otp.findOne({phone})
+        const otpData = await Otp.findOne({phone})
         
        if(!otpData.length){
           res.send({status: false, data: "Otp does not exists"});
@@ -229,8 +219,7 @@ app.post("/api/v1/forgotpassword/otp-verification",async(req,res)=>{
           res.send({status: false, data: "Wrong Otp"});
           return;
         }
-    }catch(error){res.json({message:error.meassage})
-     }
+     
     });
       
       
@@ -254,6 +243,7 @@ app.post('/api/v1/shop/update', authenticateToken, async(req, res) => {
  
     try{
         const tkid = req.user_id
+        console.log(tkid);
         await Shop.findOneAndUpdate({_id:tkid},{shopName: req.body.shopName,
         shopLocation: req.body.shopLocation,
         pin: req.body.pin}).exec()
@@ -262,7 +252,7 @@ app.post('/api/v1/shop/update', authenticateToken, async(req, res) => {
         res.json({status: true, data: "Shop upateded successfully"})
     }catch(error) {
         res.json({message: error.message})
-    } })
+    } });
 
 
 app.listen(5000, ()=>{
