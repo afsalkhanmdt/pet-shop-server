@@ -132,12 +132,7 @@ let petid=short.generate()
              
              pet.save()
             res.send({pet})
-    // try {
-    //     await pet.save()
-    //     res.json({status: true, data: "Pet created successfully"})
-    // } catch (error) {
-    //     res.json({message: error.message})
-    // }
+   
 })
 
 app.get('/api/v1/profile',authenticateToken,async(req, res) => {
