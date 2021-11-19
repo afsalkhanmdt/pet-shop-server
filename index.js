@@ -125,22 +125,31 @@ app.get('/api/v1/shops/pet/:sid', async(req,res) => {
 
 app.post('/api/v1/shop/pets',authenticateToken, async(req, res) => {
 
+let petid=short.generate()
     const pet = new Pet({
         petName: req.body.petName,
         petBreed: req.body.petBreed,
         petAge: req.body.petAge,
+        
         petDescription: req.body.petDescription,
         petPrice: req.body.petPrice,
         shopOwner: req.body.shopOwner,
-        shopId:req.body.shopId
+        shopId:req.body.shopId,
+        petid:petid
     })
-
-    try {
-        await pet.save()
-        res.json({status: true, data: "Pet created successfully"})
-    } catch (error) {
-        res.json({message: error.message})
-    }
+    
+  // let petid=short.generate()
+   
+             
+             
+             pet.save()
+            res.send({pet})
+    // try {
+    //     await pet.save()
+    //     res.json({status: true, data: "Pet created successfully"})
+    // } catch (error) {
+    //     res.json({message: error.message})
+    // }
 })
 
 app.post('/api/v1/orders',authenticateToken, async(req, res) => {
@@ -199,18 +208,17 @@ app.get('/api/v1/mypets',authenticateToken,async(req, res) => {
 })
 
 app.post('/api/v1/imageupload',async(req,res)=>{
-    
     Object.entries(req.files).forEach(element => {
         let randomValue = crypto.randomUUID()
 
         req.files[element[0]].mv("./images/"+randomValue+".jpg").then((error)=>{
             if(!error)
             {
-                res.send({status :true, data: 'file upload successfully' })
+                res.send({status :true, url:randomValue+".jpg" })
+                return
             }
         })
     });
-    
 })
 
 
@@ -242,9 +250,10 @@ app.post("/api/v1/forgotpassword",async(req,res)=>{
           res.send({status: false, data: "Failed to sent otp"});
           return;
         }
-
-        res.send({status: true, data: "successfull "})
-      
+        if(otpResponce){   
+            res.send({status: true, data: "successfully sent otp"});
+            return;
+          }
    
     });
         
@@ -273,6 +282,7 @@ app.post("/api/v1/forgotpassword/otp-verification",async(req,res)=>{
       
       
       
+
 app.post("/api/v1/forgotpassword/password-reset",authenticateToken,async(req,res)=>{
        
        
@@ -360,7 +370,27 @@ app.post('/api/v1/shop/update', authenticateToken, async(req, res) => {
         
         });
         
-  
+        app.get("/api/v1/pet-delete",async(req,res) => {
+    
+            const petid =req.body.petid;
+            const Petdata= await Pet.findOne({petid})
+            console.log(Petdata)
+        
+            if(Petdata==null){
+                res.send({status:false,data:"Invalid petid"})
+                return;
+            }
+            await Pet.deleteOne({petid}).exec();
+            {
+                res.send({status: true, data: "Successfully deleted"})
+            }
+            
+          
+            
+        });
+
+
+       
 app.listen(5000, ()=>{
     console.log('app listen in port 5000');
 })
