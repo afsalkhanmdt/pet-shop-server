@@ -4,9 +4,9 @@ const bcrypt = require('bcrypt')
 const Shop = require('./Models/shop')
 const cors = require('cors')
 const Pet = require('./Models/pets')
+const Order = require('./Models/orders')
 const Otp=require('./Models/otp')
 var jwt = require('jsonwebtoken')
-const { findByIdAndUpdate } = require('./Models/shop')
 require('dotenv').config()
 const fileUpload = require('express-fileupload')
 
@@ -111,6 +111,18 @@ app.get('/api/v1/pets', async(req,res) => {
     }
 })
 
+app.get('/api/v1/shops/pet/:sid', async(req,res) => {
+    const shopid = req.params.sid
+    const shop = await Shop.findById(shopid);
+    const name = shop.shopName
+    const pet = await Pet.find({shopOwner: name});
+    try {
+       res.json(pet)  
+    } catch (error) {
+        res.json({message: error.message})
+    }
+})
+
 app.post('/api/v1/shop/pets',authenticateToken, async(req, res) => {
 
 let petid=short.generate()
@@ -135,19 +147,62 @@ let petid=short.generate()
    
 })
 
+app.post('/api/v1/orders',authenticateToken, async(req, res) => {
+
+    const order = new Order({
+        petName: req.body.Pname,
+        petBreed: req.body.Pbreed,
+        userName: req.body.userName,
+        phone: req.body.phone,
+        petPrice: req.body.Pprice,
+        shopOwner: req.body.Sname
+    })
+
+    try {
+        await order.save()
+        res.json({status: true, data: "Order successfull"})
+    } catch (error) {
+        res.json({message: error.message})
+    }
+})
+
+
+app.get('/api/v1/myorders',authenticateToken,async(req, res) => {
+    try {
+        const tkid = req.user_id
+        const shopDt = await Shop.findById(tkid);
+        const shop = shopDt.shopName
+        const orders = await Order.find({shopOwner: shop});
+        res.json(orders)
+    } catch (error) {
+        res.json({message: error.message})
+    }
+})
+
+
 app.get('/api/v1/profile',authenticateToken,async(req, res) => {
     try {
         const tkid = req.user_id
         const shopDt = await Shop.findById(tkid);
-        console.log(shopDt);
         res.json(shopDt)
     } catch (error) {
         res.json({message: error.message})
     }
 })
 
+app.get('/api/v1/mypets',authenticateToken,async(req, res) => {
+    try {
+        const tkid = req.user_id
+        const shopDt = await Shop.findById(tkid);
+        const shop = shopDt.shopName
+        const pets = await Pet.find({shopOwner: shop});
+        res.json(pets)
+    } catch (error) {
+        res.json({message: error.message})
+    }
+})
+
 app.post('/api/v1/imageupload',async(req,res)=>{
-  
     Object.entries(req.files).forEach(element => {
         let randomValue = crypto.randomUUID()
 
@@ -157,27 +212,34 @@ app.post('/api/v1/imageupload',async(req,res)=>{
                 res.send({status :true, url:randomValue+".jpg" })
                 return
             }
-            
         })
     });
 })
+
+
 app.post("/api/v1/forgotpassword",async(req,res)=>{
     
-       const phone=req.body.phone
+        const phone=req.body.phone
         const phoneData = await Shop.findOne({phone:req.body.phone});
-       console.log({phoneData})
         if(!phoneData){
           res.send({status: false, data: "NO phone number exist"});
           return;
         }
       
         const otpResponce = await sendOtp(phone);
-        console.log(otpResponce)
-//console.log({sendOtp})
-      const otpp = await Otp.create({phone:req.body.phone,
-        otp: otpResponce.otp})
+        const otpexists = await Otp.exists({phone});
+        if(!otpexists)
+        {
+            const otpp = await Otp.create({phone:req.body.phone,
+                otp: otpResponce.otp})
+        }
+        else
+        {
+            const otpp = await Otp.findOneAndUpdate({phone:req.body.phone,
+                otp: otpResponce.otp})
+        }
+      
       //await otp.save()
-      console.log({otpp})
      
         if(!otpResponce){   
           res.send({status: false, data: "Failed to sent otp"});
@@ -192,13 +254,13 @@ app.post("/api/v1/forgotpassword",async(req,res)=>{
         
       
         
-      app.post("/api/v1/forgotpassword/otp-verification",async(req,res)=>{
+app.post("/api/v1/forgotpassword/otp-verification",async(req,res)=>{
     
       
+        
         const {phone,otp} = req.body;
         const otpData = await Otp.findOne({phone})
-        console.log(otpData)
-       if(!otpData){
+        if(!otpData){
           res.send({status: false, data: "Otp does not exists"});
           return;
         }
@@ -215,23 +277,74 @@ app.post("/api/v1/forgotpassword",async(req,res)=>{
       
       
       
-   app.post("/api/v1/forgotpassword/password-reset",authenticateToken,async(req,res)=>{
+
+app.post("/api/v1/forgotpassword/password-reset",authenticateToken,async(req,res)=>{
        
        
-        const{phone,password} = req.body;h
+        const{phone,password} = req.body;
         
         const hashedPassword = await bcrypt.hash(password, 10)
       await Shop.findOneAndUpdate({phone},{password:hashedPassword});
       
-      res.send({status: true, data: " Password updated successfully!"});
+        res.send({status: true, data: " Password updated successfully!"});
     
       
     });
 
-app.post('/api/v1/shop/update', async(req, res) => {
+
+app.post("/api/v1/placeorder",async(req,res)=>{
+    
+    const phone=req.body.phone
+    const otpResponce = await sendOtp(phone);
+    const otpexists = await Otp.exists({phone});
+        if(!otpexists)
+        {
+            const otpp = await Otp.create({phone:req.body.phone,
+                otp: otpResponce.otp})
+        }
+        else
+        {
+            const otpp = await Otp.findOneAndUpdate({phone:req.body.phone,
+                otp: otpResponce.otp})
+        }
+     
+    if(!otpResponce){   
+        res.send({status: false, data: "Failed to sent otp"});
+        return;
+    }
+
+    res.send({status: true, data: "successfull "})
+      
+   
+});
+
+app.post("/api/v1/placeorder/otp-verification",async(req,res)=>{
+    
+      
+        
+    const {phone,otp} = req.body;
+    const otpData = await Otp.findOne({phone})
+    if(!otpData){
+      res.send({status: false, data: "Otp does not exists"});
+      return;
+    }
+    
+    if(otpData.otp != otp){
+      res.send({status: false, data: "Wrong Otp"});
+      return;
+    }
+    res.json({status: true,
+        data: "Successfully Logedin",
+        token: `Bearer ${jwt.sign({ user_id: otp._id }, process.env.JWT_SECRET)}`
+       })
+});
+
+
+app.post('/api/v1/shop/update', authenticateToken, async(req, res) => {
  
     try{
-       await Shop.findOneAndUpdate({_id:req.body._id},{shopName: req.body.shopName,
+        const tkid = req.user_id
+        await Shop.findOneAndUpdate({_id:tkid},{shopName: req.body.shopName,
         shopLocation: req.body.shopLocation,
         pin: req.body.pin}).exec()
 
@@ -239,7 +352,7 @@ app.post('/api/v1/shop/update', async(req, res) => {
         res.json({status: true, data: "Shop upateded successfully"})
     }catch(error) {
         res.json({message: error.message})
-    } })
+    } });
 
     app.post('/api/v1/pet/update', async(req, res) => {
  
