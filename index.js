@@ -246,6 +246,26 @@ app.post('/api/v1/shop/update', async(req, res) => {
         res.json({message: error.message})
     } })
 
+    app.post('/api/v1/pet/update', async(req, res) => {
+ 
+        try{
+           await Pet.findOneAndUpdate({_id:req.body._id},{petName: req.body.petName,
+            petBreed: req.body.petBreed,
+            petAge: req.body.petAge,
+            
+            petDescription: req.body.petDescription,
+            petPrice: req.body.petPrice,
+            shopOwner: req.body.shopOwner,
+            shopId:req.body.shopId
+            }).exec()
+    
+             
+            res.json({status: true, data: "Pet upateded successfully"})
+        }catch(error) {
+            res.json({message: error.message})
+        } })
+    
+
     app.get('/api/v1/shop/pet/:sid', async(req, res) => {
       
             const shopId = req.params.sid
