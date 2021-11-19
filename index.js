@@ -252,7 +252,6 @@ app.post("/api/v1/forgotpassword",async(req,res)=>{
         
 app.post("/api/v1/forgotpassword/otp-verification",async(req,res)=>{
     
-      
         
         const {phone,otp} = req.body;
         const otpData = await Otp.findOne({phone})
@@ -294,14 +293,12 @@ app.post("/api/v1/placeorder",async(req,res)=>{
     const otpexists = await Otp.exists({phone});
         if(!otpexists)
         {
-            const otpp = await Otp.create({phone:req.body.phone,
+            await Otp.create({phone:req.body.phone,
                 otp: otpResponce.otp})
+            return
         }
-        else
-        {
-            const otpp = await Otp.findOneAndUpdate({phone:req.body.phone,
+        await Otp.findOneAndUpdate({phone:req.body.phone,
                 otp: otpResponce.otp})
-        }
      
     if(!otpResponce){   
         res.send({status: false, data: "Failed to sent otp"});
