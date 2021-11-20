@@ -144,12 +144,7 @@ let petid=short.generate()
              
              pet.save()
             res.send({pet})
-    // try {
-    //     await pet.save()
-    //     res.json({status: true, data: "Pet created successfully"})
-    // } catch (error) {
-    //     res.json({message: error.message})
-    // }
+   
 })
 
 app.post('/api/v1/orders',authenticateToken, async(req, res) => {
@@ -358,6 +353,26 @@ app.post('/api/v1/shop/update', authenticateToken, async(req, res) => {
     }catch(error) {
         res.json({message: error.message})
     } });
+
+    app.post('/api/v1/pet/update', async(req, res) => {
+ 
+        try{
+           await Pet.findOneAndUpdate({_id:req.body._id},{petName: req.body.petName,
+            petBreed: req.body.petBreed,
+            petAge: req.body.petAge,
+            
+            petDescription: req.body.petDescription,
+            petPrice: req.body.petPrice,
+            shopOwner: req.body.shopOwner,
+            shopId:req.body.shopId
+            }).exec()
+    
+             
+            res.json({status: true, data: "Pet upateded successfully"})
+        }catch(error) {
+            res.json({message: error.message})
+        } })
+    
 
     app.get('/api/v1/shop/pet/:sid', async(req, res) => {
       
