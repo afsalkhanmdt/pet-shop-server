@@ -134,7 +134,7 @@ let petid=short.generate()
         petDescription: req.body.petDescription,
         petPrice: req.body.petPrice,
         shopOwner: req.body.shopOwner,
-        shopId:req.body.shopId,
+        // shopId:req.body.shopId,
         petid:petid
     })
     
@@ -367,11 +367,10 @@ app.post('/api/v1/shop/update', authenticateToken, async(req, res) => {
         
         });
         
-        app.get("/api/v1/pet-delete",async(req,res) => {
+        app.get("/api/v1/pet-delete/:pid",async(req,res) => {
     
-            const petid =req.body.petid;
+            const petid =req.params.pid;
             const Petdata= await Pet.findOne({petid})
-            console.log(Petdata)
         
             if(Petdata==null){
                 res.send({status:false,data:"Invalid petid"})
