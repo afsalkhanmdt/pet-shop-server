@@ -40,7 +40,13 @@ const authenticateToken = (req, res, next) => {
 
 app.get('/api/v1/shops', async(req, res)=>{
     try {
-        const data = await Shop.find({})
+        const data = await Shop.find({},{shopName:1,
+            shopLocation: 1,
+            pin:1,
+            email: 1,
+            phone: 1,
+        _id:0
+    })
         res.json(data)
     } catch (error) {
         res.json({message: error.message})
@@ -86,7 +92,12 @@ app.post('/api/v1/login', async(req, res) => {
 
 app.get('/api/v1/shop/:sid', async(req, res) => {
     const shopid = req.params.sid
-    const shop = await Shop.findById(shopid);
+    const shop = await Shop.findOne({shopid},{shopName:1,
+        shopLocation: 1,
+        pin:1,
+        email: 1,
+        phone: 1,
+    _id:0});
     try {
         res.json(shop)
     } catch (error) {
@@ -96,7 +107,7 @@ app.get('/api/v1/shop/:sid', async(req, res) => {
 
 app.get('/api/v1/pet/:pid', async(req, res) => {
     const petid = req.params.pid
-    const pet = await Pet.findById(petid);
+    const pet = await Pet.findOne({petid},{_id:0,petName:1,shopId:0,shopOwner:1,petBreed:1,petPrice:1,petDescription:1});
     try {
         res.json(pet)
     } catch (error) {
@@ -105,7 +116,7 @@ app.get('/api/v1/pet/:pid', async(req, res) => {
 })
 
 app.get('/api/v1/pets', async(req,res) => {
-    const pets = await Pet.find();
+    const pets = await Pet.find({},{_id:0,petName:1,shopId:0,shopOwner:1,petBreed:1,petPrice:1,petDescription:1});
     try {
        res.json(pets)     
     } catch (error) {
@@ -117,7 +128,7 @@ app.get('/api/v1/shops/pet/:sid', async(req,res) => {
     const shopid = req.params.sid
   
  
-    const pet = await Pet.find({shopId:shopid},{_id:0,petName:1,shopId:1,shopOwner:1,petBreed:1,petPrice:1,petDescription:1});
+    const pet = await Pet.find({shopId:shopid},{_id:0,petName:1,shopId:0,shopOwner:1,petBreed:1,petPrice:1,petDescription:1});
   
     console.log(pet)
     console.log(shopid)
@@ -130,7 +141,7 @@ app.get('/api/v1/shops/pet/:sid', async(req,res) => {
 })
 
 app.post('/api/v1/shop/pets',authenticateToken, async(req, res) => {
-
+const tkid = req.user_id;
 let petid=short.generate()
     const pet = new Pet({
         petName: req.body.petName,
@@ -139,12 +150,12 @@ let petid=short.generate()
         petDescription: req.body.petDescription,
         petPrice: req.body.petPrice,
         shopOwner: req.body.shopOwner,
-        shopId:req.body.shopId,
+        shopId:tkid,
         petid:petid
     })
              
              pet.save()
-            res.send({pet})
+            res.send({status:true,data:"success"})
    
 })
 
@@ -345,17 +356,17 @@ app.post('/api/v1/shop/update', authenticateToken, async(req, res) => {
         res.json({message: error.message})
     } });
 
- app.post('/api/v1/pet/update', async(req, res) => {
- 
+ app.post('/api/v1/pet/update',authenticateToken, async(req, res) => {
+         const tkid = req.user_id;
+         const petid=req.body.petId
         try{
-           await Pet.findOneAndUpdate({_id:req.body._id},{petName: req.body.petName,
+           await Pet.findOneAndUpdate({petId:petid,shopId:tkid},{petName: req.body.petName,
             petBreed: req.body.petBreed,
             petAge: req.body.petAge,
             
             petDescription: req.body.petDescription,
-            petPrice: req.body.petPrice,
-            shopOwner: req.body.shopOwner,
-            shopId:req.body.shopId
+            petPrice: req.body.petPrice
+            
             }).exec()
     
              
@@ -367,7 +378,7 @@ app.post('/api/v1/shop/update', authenticateToken, async(req, res) => {
  app.get('/api/v1/shop/pet/:sid', async(req, res) => {
       
             const shopId = req.params.sid
-            const shop = await Pet.find({shopId});
+            const shop = await Pet.find({shopId},{_id:0,petName:1,shopId:0,shopOwner:1,petBreed:1,petPrice:1,petDescription:1});
             const pets = await Pet.find({shopId});
             
             res.send({shop})
@@ -375,10 +386,10 @@ app.post('/api/v1/shop/update', authenticateToken, async(req, res) => {
         
         });
         
-app.get("/api/v1/pet-delete",async(req,res) => {
-    
+app.get("/api/v1/pet-delete",authenticateToken,async(req,res) => {
+            const tkid = req.user_id;
             const petid =req.body.petid;
-            const Petdata= await Pet.findOne({petid})
+            const Petdata= await Pet.findOne({petid,shopId:tkid})
             console.log(Petdata)
         
             if(Petdata==null){
@@ -394,13 +405,12 @@ app.get("/api/v1/pet-delete",async(req,res) => {
             
         });
 
-app.post('/api/v1/shop/user-update', async(req, res) => {
-     
-            const shopid = req.body.shopid;
-            const shopdata = await Shop.findOne({shopid})
-        
+app.post('/api/v1/shop/user-update', authenticateToken,async(req, res) => {
+             const tkid = req.user_id;
             
-            if(!shopid){
+            const shopdata = await Shop.findById(tkid)
+        
+            if(!shopdata){
                 res.send({status:false,data:"Invalid shopid"})
                 return;
             }                                
@@ -426,14 +436,14 @@ app.post('/api/v1/shop/user-update', async(req, res) => {
                 return;
             }
             if(otpResponce){   
-                res.send({status: true, data: "success!!",token: `Bearer ${jwt.sign({ user_id:shopid}, process.env.JWT_SECRET)}`});
+                res.send({status: true, data: "success!!"});
                 return;
             }
         
         });
         
 app.post('/api/v1/shop/user-update/otp-verification',authenticateToken, async(req, res) => {
-        
+           const tkid = req.user_id;
             const {phone,otp} = req.body;
             const otpData = await Otp.findOne({phone})
             console.log(otpData)
@@ -447,7 +457,7 @@ app.post('/api/v1/shop/user-update/otp-verification',authenticateToken, async(re
               return;
             }
             if(otpData.otp == otp){
-                await Shop.findOneAndUpdate({shopid:req.body.shopid},{email: req.body.email,phone: req.body.phone}).exec()
+                await Shop.findOneAndUpdate({_id:tkid},{email: req.body.email,phone: req.body.phone}).exec()
                 res.send({status: true, data: "  success"});
                 return;
             }
