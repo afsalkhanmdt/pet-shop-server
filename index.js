@@ -6,6 +6,7 @@ const cors = require('cors')
 const Pet = require('./Models/pets')
 const Order = require('./Models/orders')
 const Otp=require('./Models/otp')
+const nodemailer = require("nodemailer");
 var jwt = require('jsonwebtoken')
 require('dotenv').config()
 const fileUpload = require('express-fileupload')
@@ -16,6 +17,7 @@ db.once('open', ()=> {console.log('database connected');})
 const short=require('short-uuid')
 const crypto = require('crypto');
 const {sendOtp}=require('./Models/otpmobile')
+const path = require('path')
 const app = express()
 app.use(fileUpload())
 app.use("/images", express.static("images"))
@@ -54,6 +56,7 @@ app.post('/api/v1/signup', async(req, res) =>{
             shopLocation: req.body.shopLocation,
             pin: req.body.pin,
             email: req.body.email,
+            shopImage: req.body.url,
             phone: req.body.phone,
             password: hashedPassword
         })
@@ -66,7 +69,7 @@ app.post('/api/v1/signup', async(req, res) =>{
 app.post('/api/v1/login', async(req, res) => {
     try {
         const shop = await Shop.findOne({email: req.body.email})
-        if(!shop) return res.json({status: false, data: "User Not Exist"})
+        if(!shop) return res.json({status: false, data: "User Does Not Exist"})
         if(!await bcrypt.compare(req.body.password, shop.password))
         {
             res.json({status: false, data: "Password Incorrect"})
@@ -113,9 +116,7 @@ app.get('/api/v1/pets', async(req,res) => {
 
 app.get('/api/v1/shops/pet/:sid', async(req,res) => {
     const shopid = req.params.sid
-    const shop = await Shop.findById(shopid);
-    const name = shop.shopName
-    const pet = await Pet.find({shopOwner: name});
+    const pet = await Pet.find({shopId: shopid});
     try {
        res.json(pet)  
     } catch (error) {
@@ -130,11 +131,11 @@ let petid=short.generate()
         petName: req.body.petName,
         petBreed: req.body.petBreed,
         petAge: req.body.petAge,
-        
+        petImage: req.body.petImage,
         petDescription: req.body.petDescription,
         petPrice: req.body.petPrice,
         shopOwner: req.body.shopOwner,
-        // shopId:req.body.shopId,
+        shopId:req.body.profileId,
         petid:petid
     })
     
@@ -143,11 +144,34 @@ let petid=short.generate()
              
              
              pet.save()
-            res.send({pet})
+            res.send({status: true})
    
 })
 
 app.post('/api/v1/orders',authenticateToken, async(req, res) => {
+
+
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: '',
+          pass: '' // naturally, replace both with your real credentials or an application-specific password
+        }
+      });
+      
+      const mailOptions = {
+        from: '',
+        to: '',
+        subject: 'Test mail',
+        text: 'Hello world.'
+      };
+      transporter.sendMail(mailOptions, function(error, info){
+        if (error) {
+          console.log(error);
+        } else {
+          console.log('Email sent: ' + info.response);
+        }
+      });
 
     const order = new Order({
         petName: req.body.Pname,
@@ -155,7 +179,8 @@ app.post('/api/v1/orders',authenticateToken, async(req, res) => {
         userName: req.body.userName,
         phone: req.body.phone,
         petPrice: req.body.Pprice,
-        shopOwner: req.body.Sname
+        shopOwner: req.body.Sname,
+        date: req.body.date
     })
 
     try {
@@ -193,10 +218,9 @@ app.get('/api/v1/profile',authenticateToken,async(req, res) => {
 app.get('/api/v1/mypets',authenticateToken,async(req, res) => {
     try {
         const tkid = req.user_id
-        const shopDt = await Shop.findById(tkid);
-        const shop = shopDt.shopName
-        const pets = await Pet.find({shopOwner: shop});
+        const pets = await Pet.find({shopId: tkid});
         res.json(pets)
+        console.log(pets);
     } catch (error) {
         res.json({message: error.message})
     }
@@ -214,6 +238,14 @@ app.post('/api/v1/imageupload',async(req,res)=>{
             }
         })
     });
+})
+
+app.post('/api/v1/imageupdate', authenticateToken, async(req,res) => {
+    const tkid = req.user_id
+    console.log(tkid);
+    await Shop.findOneAndUpdate({_id:tkid},{shopImage: req.body.url}).exec()
+
+    res.send({status: true, data: " Image updated successfully!"});
 })
 
 
@@ -246,7 +278,7 @@ app.post("/api/v1/forgotpassword",async(req,res)=>{
           return;
         }
         if(otpResponce){   
-            res.send({status: true, data: "successfully sent otp"});
+            res.send({status: true});
             return;
           }
    
@@ -269,7 +301,6 @@ app.post("/api/v1/forgotpassword/otp-verification",async(req,res)=>{
           return;
         }
         res.json({status: true,
-            data: "Successfully Logedin",
             token: `Bearer ${jwt.sign({ user_id: otp._id }, process.env.JWT_SECRET)}`
            })
     });
@@ -352,16 +383,16 @@ app.post('/api/v1/shop/update', authenticateToken, async(req, res) => {
     } });
 
     app.post('/api/v1/pet/update', async(req, res) => {
- 
+
         try{
-           await Pet.findOneAndUpdate({_id:req.body._id},{petName: req.body.petName,
+           await Pet.findOneAndUpdate({petid:req.body.pid},{petName: req.body.petName,
             petBreed: req.body.petBreed,
             petAge: req.body.petAge,
             
             petDescription: req.body.petDescription,
             petPrice: req.body.petPrice,
-            shopOwner: req.body.shopOwner,
-            shopId:req.body.shopId
+            // shopOwner: req.body.shopOwner,
+            // shopId:req.body.shopId
             }).exec()
     
              

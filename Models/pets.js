@@ -8,7 +8,7 @@ const petSchema = new mongoose.Schema({
     petPrice: {type: String, required: true},
     petImage: {type: String, required: false},
     shopOwner: {type: String, required: true},
-    // shopId: {type: String, required: true},
+    shopId: {type: String, required: true},
     petid:{type:String, unique:true,requried:true,length:5}
 })
 
