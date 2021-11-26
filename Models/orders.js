@@ -8,6 +8,7 @@ const orderSchema = new mongoose.Schema({
     petBreed: {type: String, required: true},
     petPrice: {type: String, required: true},
     shopOwner: {type: String, required: true},
+    date: {type: String, required: true}
 })
 
 module.exports = mongoose.model('order', orderSchema)
