@@ -166,7 +166,9 @@ app.post('/api/v1/orders',authenticateToken, async(req, res) => {
         from: '',
         to: '',
         subject: 'Order',
-        text: order
+        text: `User name : ${req.body.userName},
+        Phone number : ${req.body.phone},
+        Pet name : ${req.body.Pname} ` 
       };
       transporter.sendMail(mailOptions, function(error, info){
         if (error) {
@@ -321,6 +323,7 @@ app.post("/api/v1/placeorder",async(req,res)=>{
     
     const phone=req.body.phone
     const otpResponce = await sendOtp(phone);
+    console.log(otpResponce);
     const otpexists = await Otp.exists({phone});
         if(!otpexists)
         {
