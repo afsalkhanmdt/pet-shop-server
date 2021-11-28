@@ -47,6 +47,7 @@ app.get('/api/v1/shops', async(req, res)=>{
             pin:1,
             email: 1,
             phone: 1,
+            shopImage: 1,
         _id:0
     })
         res.json(data)
@@ -71,7 +72,7 @@ app.post('/api/v1/signup', async(req, res) =>{
         })
         res.json({status: true, data: "Shop created successfully"})
     }catch(error) {
-        res.json({message: error.message})
+        res.json({status: false, data: "Shop already exists "})
     }   
 })
 
@@ -93,24 +94,25 @@ app.post('/api/v1/login', async(req, res) => {
     }
 })
 
-app.get('/api/v1/shop/:sid', async(req, res) => {
-    const shopid = req.params.sid
-    const shop = await Shop.findOne({shopid},{shopName:1,
+app.get('/api/v1/shop/:sname', async(req, res) => {
+    const shopname = req.params.sname
+    const shop = await Shop.findOne({shopName:shopname },{shopName:1,
         shopLocation: 1,
         pin:1,
+        shopImage: 1,
         email: 1,
         phone: 1,
     _id:0});
     try {
-        res.json(shop)
+        res.send(shop)
     } catch (error) {
         res.json({message: error.message})
     }
 })
 
 app.get('/api/v1/pet/:pid', async(req, res) => {
-    const petid = req.params.pid
-    const pet = await Pet.findOne({petid},{_id:0,petName:1,shopId:0,shopOwner:1,petBreed:1,petPrice:1,petDescription:1});
+    const petname = req.params.pid
+    const pet = await Pet.findOne({petName : petname},{_id:0,petName:1,shopOwner:1,petBreed:1,petImage:1,petAge:1,petPrice:1,petDescription:1});
     try {
         res.json(pet)
     } catch (error) {
@@ -119,23 +121,22 @@ app.get('/api/v1/pet/:pid', async(req, res) => {
 })
 
 app.get('/api/v1/pets', async(req,res) => {
-    const pets = await Pet.find({},{_id:0,petName:1,shopId:0,shopOwner:1,petBreed:1,petPrice:1,petDescription:1});
+    const pets = await Pet.find({},{_id:0,petName:1,petImage:1,shopOwner:1,petBreed:1,petPrice:1,petDescription:1});
     try {
-       res.json(pets)     
+       res.json(pets)   
+        
     } catch (error) {
         res.json({message: error.message})
     }
 })
 
-app.get('/api/v1/shops/pet/:sid', async(req,res) => {
-    const shopid = req.params.sid
-  
-    const pet = await Pet.find({shopId:shopid},{_id:1,petName:1,shopId:1,petImage:1,shopOwner:1,petBreed:1,petPrice:1,petDescription:1});
-  
-    console.log(pet)
-    console.log(shopid)
+app.get('/api/v1/shops/pet/:sname', async(req,res) => {
+    const shopname = req.params.sname
+    const shop = await Shop.findOne({shopName :shopname})
+    const shopid = shop._id
     try {
-     res. send(pet)
+        const pet = await Pet.find({shopId:shopid},{_id:0,petName:1,petImage:1,shopOwner:1,petBreed:1,petPrice:1,petDescription:1});
+        res.json(pet) 
     
     } catch (error) {
         res.json({message: error.message})
@@ -151,6 +152,8 @@ let petid=short.generate()
         petAge: req.body.petAge,
         petImage: req.body.petImage,
         petDescription: req.body.petDescription,
+        petPrice: req.body.petPrice,
+        shopOwner: req.body.shopOwner,
         shopId:tkid,
         petid:petid
     })
@@ -232,7 +235,6 @@ app.get('/api/v1/mypets',authenticateToken,async(req, res) => {
         const tkid = req.user_id
         const pets = await Pet.find({shopId: tkid});
         res.json(pets)
-        console.log(pets);
     } catch (error) {
         res.json({message: error.message})
     }
@@ -369,7 +371,7 @@ app.post("/api/v1/placeorder/otp-verification",async(req,res)=>{
       return;
     }
     res.json({status: true,
-        data: "Successfully Logedin",
+        data: "Successfully ",
         token: `Bearer ${jwt.sign({ user_id: otp._id }, process.env.JWT_SECRET)}`
        })
 });
@@ -418,9 +420,10 @@ app.post('/api/v1/shop/update', authenticateToken, async(req, res) => {
         
         });
         
-app.get("/api/v1/pet-delete",authenticateToken,async(req,res) => {
+app.get("/api/v1/pet-delete/:pid",authenticateToken,async(req,res) => {
             const tkid = req.user_id;
-            const petid =req.body.petid;
+            const petid =req.params.pid;
+            console.log(petid);
             const Petdata= await Pet.findOne({petid,shopId:tkid})
             console.log(Petdata)
         

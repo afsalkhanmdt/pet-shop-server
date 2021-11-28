@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 
 const petSchema = new mongoose.Schema({
-    petName: {type: String, required: true},
+    petName: {type: String, unique:true, required: true},
     petBreed: {type: String, required: true},
     petAge: {type: String, required: true},
     petDescription: {type: String, required: true},
