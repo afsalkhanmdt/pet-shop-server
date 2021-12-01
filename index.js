@@ -19,6 +19,7 @@ const crypto = require('crypto');
 const {sendOtp}=require('./Models/otpmobile')
 const path = require('path')
 const { send } = require('process')
+const { json } = require('express')
 const app = express()
 app.use(fileUpload())
 app.use("/images", express.static("images"))
@@ -259,10 +260,15 @@ app.post('/api/v1/imageupload',async(req,res)=>{
 
 app.post('/api/v1/imageupdate', authenticateToken, async(req,res) => {
     const tkid = req.user_id
-    console.log(tkid);
-    await Shop.findOneAndUpdate({_id:tkid},{shopImage: req.body.url}).exec()
+    Object.entries(req.files).forEach(element => {
+        let randomValue = crypto.randomUUID()
 
-    res.send({status: true, data: " Image updated successfully!"});
+        req.files[element[0]].mv("./images/"+randomValue+".jpg")
+        let url = randomValue+".jpg"
+        Shop.findOneAndUpdate({_id:tkid},{shopImage: url}).exec()
+    });
+
+    // res.send({status: true, data: " Image updated successfully!"});
 })
 
 
@@ -274,19 +280,20 @@ app.post("/api/v1/forgotpassword",async(req,res)=>{
           res.send({status: false, data: "NO phone number exist"});
           return;
         }
-      
-        const otpResponce = await sendOtp(phone);
+
         const otpexists = await Otp.exists({phone});
+        const otpResponce = await sendOtp(phone);
+        console.log(otpResponce);
         if(!otpexists)
         {
-            const otpp = await Otp.create({phone:req.body.phone,
+           
+            await Otp.create({phone:req.body.phone,
                 otp: otpResponce.otp})
+            return
         }
-        else
-        {
-            const otpp = await Otp.findOneAndUpdate({phone:req.body.phone,
+        await Otp.findOneAndUpdate({phone:req.body.phone,
                 otp: otpResponce.otp})
-        }
+     
       
       //await otp.save()
      
@@ -336,9 +343,9 @@ app.post("/api/v1/forgotpassword/password-reset",authenticateToken,async(req,res
 app.post("/api/v1/placeorder",async(req,res)=>{
     
     const phone=req.body.phone
+    const otpexists = await Otp.exists({phone});
     const otpResponce = await sendOtp(phone);
     console.log(otpResponce);
-    const otpexists = await Otp.exists({phone});
         if(!otpexists)
         {
             await Otp.create({phone:req.body.phone,
@@ -466,8 +473,8 @@ app.post('/api/v1/shop/user-update', authenticateToken,async(req, res) => {
             }                                
             
             const phone = req.body.phone;
-            const otpResponce = await sendOtp(phone);
             const otpexists = await Otp.exists({phone});
+            const otpResponce = await sendOtp(phone);
                 if(!otpexists)
                 {
                     const otpp = await Otp.create({phone:req.body.phone,

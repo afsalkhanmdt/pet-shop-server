@@ -2,7 +2,6 @@ const unirest = require("unirest");
 const crypto = require("crypto");
 
 const sendOtp = async(mobileNumber) =>{
-  console.log(mobileNumber)
     const otp = crypto.randomInt(1000,9999);
     const req = unirest("POST", "https://www.fast2sms.com/dev/bulkV2");
     req.headers({
