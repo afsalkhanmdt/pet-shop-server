@@ -1,7 +1,7 @@
 const mongoose = require('mongoose')
 
 const shopSchema = new mongoose.Schema({
-    shopName: {type: String, unique:true, required: true},
+    shopName: {type: String, required: true},
     shopLocation: {type: String, required: true},
     pin: {type: String, required: true, max: 6},
     email: {type: String, unique: true, required: true},

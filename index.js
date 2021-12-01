@@ -145,6 +145,9 @@ app.get('/api/v1/shops/pet/:sname', async(req,res) => {
 
 app.post('/api/v1/shop/pets',authenticateToken, async(req, res) => {
 const tkid = req.user_id;
+const shopDt = await Shop.findById(tkid);
+const shopOwner = shopDt.shopName
+console.log(shopOwner);
 let petid=short.generate()
     const pet = new Pet({
         petName: req.body.petName,
@@ -153,7 +156,7 @@ let petid=short.generate()
         petImage: req.body.petImage,
         petDescription: req.body.petDescription,
         petPrice: req.body.petPrice,
-        shopOwner: req.body.shopOwner,
+        shopOwner: shopOwner,
         shopId:tkid,
         petid:petid
     })
@@ -166,29 +169,29 @@ let petid=short.generate()
 app.post('/api/v1/orders',authenticateToken, async(req, res) => {
 
 
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: '',
-          pass: '' // naturally, replace both with your real credentials or an application-specific password
-        }
-      });
+    // const transporter = nodemailer.createTransport({
+    //     service: 'gmail',
+    //     auth: {
+    //       user: '',
+    //       pass: '' // naturally, replace both with your real credentials or an application-specific password
+    //     }
+    //   });
       
-      const mailOptions = {
-        from: '',
-        to: '',
-        subject: 'Order',
-        text: `User name : ${req.body.userName},
-        Phone number : ${req.body.phone},
-        Pet name : ${req.body.Pname} ` 
-      };
-      transporter.sendMail(mailOptions, function(error, info){
-        if (error) {
-          console.log(error);
-        } else {
-          console.log('Email sent: ' + info.response);
-        }
-      });
+    //   const mailOptions = {
+    //     from: '',
+    //     to: '',
+    //     subject: 'Order',
+    //     text: `User name : ${req.body.userName},
+    //     Phone number : ${req.body.phone},
+    //     Pet name : ${req.body.Pname} ` 
+    //   };
+    //   transporter.sendMail(mailOptions, function(error, info){
+    //     if (error) {
+    //       console.log(error);
+    //     } else {
+    //       console.log('Email sent: ' + info.response);
+    //     }
+    //   });
 
     const order = new Order({
         petName: req.body.Pname,
